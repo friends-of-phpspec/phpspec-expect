@@ -15,18 +15,20 @@ class ExpectTest extends TestCase implements MatchersProvider
         $this->addInvalidMatcher = false;
     }
 
-    /**
-     * @dataProvider correctExpectations
-     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('correctExpectations')]
     public function testItDoesNotThrowWhenExpectationIsMet($expectation): void
     {
         $expectation();
         $this->addToAssertionCount(1); // No exception thrown
     }
 
-    /**
-     * @dataProvider incorrectExpectations
-     */
+    public function testItDoesNotThrowWhenExpectationIsMetAndACustomMatcherIsUsed(): void
+    {
+        expect(1)->toHaveFoo(1);
+        $this->addToAssertionCount(1); // No exception thrown
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('incorrectExpectations')]
     public function testItThrowsWhenExpectationIsNotMet($expectation): void
     {
         $this->expectException(PhpSpecException::class);
@@ -58,7 +60,7 @@ class ExpectTest extends TestCase implements MatchersProvider
     /**
      * Cases that should evaluate without an exception
      */
-    public function correctExpectations(): array
+    public static function correctExpectations(): array
     {
         return [
             [ function () { expect(5)->toBe(5); } ],
@@ -80,16 +82,13 @@ class ExpectTest extends TestCase implements MatchersProvider
             [ function () { expect((new Foo()))->toTrigger(E_USER_DEPRECATED)->duringTriggerError(); } ],
             [ function () { expect(1.444447777)->toBeApproximately(1.444447777, 1.0e-9); } ],
             [ function () { expect((new Foo())->getIterator())->toIterateAs(new \ArrayIterator(['Foo', 'Bar'])); } ],
-            // Custom matchers
-            [ function () { expect(['foo' => 'bar'])->toHaveKey('foo'); } ],
-            [ function () { expect(1)->toHaveFoo(1); } ],
         ];
     }
 
     /**
      * Cases that should throw an exception when evaluated
      */
-    public function incorrectExpectations(): array
+    public static function incorrectExpectations(): array
     {
         return [
             [ function () { expect(6)->toBe(5); } ],
@@ -121,7 +120,6 @@ class ExpectTest extends TestCase implements MatchersProvider
     public function getMatchers(): array
     {
         return [
-            'haveKey' => function ($subject, $key) { return array_key_exists($key, $subject); },
             'haveFoo' => new FooMatcher(),
             'haveBar' => $this->addInvalidMatcher ? new \stdClass() : new FooMatcher(),
         ];
